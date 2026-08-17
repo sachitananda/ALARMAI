@@ -1,0 +1,1826 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ALARMAI</title>
+  
+  <!-- Bootstrap 5.3 -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  
+  <!-- jQuery -->
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+  
+  <!-- GSAP for Animations -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+  <style>
+    :root {
+      --bg-color: #121212;
+      --theme-color: #0dcaf0;
+    }
+    body {
+      background-color: var(--bg-color);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      overflow-x: hidden;
+      transition: background-color 0.3s ease;
+    }
+    #animated-bg {
+      position: fixed;
+      top: 0; left: 0; width: 100vw; height: 100vh;
+      z-index: -1;
+      pointer-events: none;
+    }
+    .bg-anim-gradient {
+      background: linear-gradient(-45deg, var(--bg-color), var(--theme-color), #2b3035, var(--bg-color));
+      background-size: 400% 400%;
+      animation: gradientBG 15s ease infinite;
+    }
+    @keyframes gradientBG {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+    
+    /* SCSS Converted Gooey Waves Animation */
+    .sea {
+      display: flex;
+      width: 100vw;
+      height: 100vh;
+      background-color: var(--bg-color); 
+      justify-content: center;
+      align-items: center;
+      filter: drop-shadow(0 -7px 10px var(--theme-color)) blur(3px) contrast(5);
+    }
+    .wave_graphic {
+      width: 1vw; 
+      height: 30px;
+      background: linear-gradient(180deg, var(--theme-color) 0%, transparent 100%);
+    }
+    .wave_fade { animation: waveFade 1400ms ease-in-out infinite alternate; }
+    .wave_skew { animation: waveSkew 2000ms ease-in-out infinite alternate; }
+    .wave_translate { animation: waveTranslate 2000ms ease-in-out infinite alternate; }
+
+    @keyframes waveFade {
+      0%, 5% { opacity: 0.05; }
+      100% { opacity: 1; }
+    }
+    @keyframes waveSkew {
+      0% { transform: skewY(-17.5deg); }
+      100% { transform: skewY(17.5deg); }
+    }
+    @keyframes waveTranslate {
+      0% { transform: translateY(100px); }
+      100% { transform: translateY(-100px); }
+    }
+
+    .clock-container {
+      background: rgba(33, 37, 41, 0.95);
+      padding: 2.5rem;
+      border-radius: 20px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+      z-index: 10;
+      position: relative;
+      width: 100%;
+      max-width: 750px;
+      transition: background 0.3s ease, border 0.3s ease;
+      overflow: hidden; 
+    }
+    #time-display {
+      font-size: 4.5rem;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-shadow: 0 0 20px rgba(255, 255, 255, 0.2);
+    }
+    .status-badge {
+      display: none;
+      font-size: 1rem;
+      margin-top: -10px;
+      margin-bottom: 20px;
+    }
+    
+    /* Lists Styling */
+    .alarm-item {
+      background-color: #2b3035;
+      border: 1px solid #495057;
+      border-radius: 12px;
+      padding: 15px;
+      margin-bottom: 10px;
+      transition: all 0.3s ease;
+    }
+    .alarm-item:hover { background-color: #343a40; }
+    .alarm-time { font-size: 1.8rem; font-weight: bold; line-height: 1; }
+    .alarm-days { font-size: 0.8rem; color: #adb5bd; }
+    
+    #alarmsList { max-height: 300px; overflow-y: auto; overflow-x: hidden; }
+    #alarmsList::-webkit-scrollbar { width: 6px; }
+    #alarmsList::-webkit-scrollbar-thumb { background: #6c757d; border-radius: 4px; }
+    
+    /* Countdown Styling */
+    #countdownsList, #countdownsArchive {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 15px;
+      margin-bottom: 15px;
+    }
+
+    /* Featured Countdown (Soonest) */
+    .featured-cd {
+      grid-column: 1 / -1;
+      background-color: rgba(13, 202, 240, 0.1) !important;
+      border: 2px solid var(--theme-color) !important;
+      transform: scale(1.02);
+      box-shadow: 0 0 25px rgba(13, 202, 240, 0.2);
+      padding: 25px !important;
+      margin-bottom: 20px;
+    }
+    .featured-cd .ring-svg { width: 100px !important; height: 100px !important; }
+    .featured-cd .ring-circle { r: 45; cx: 50; cy: 50; stroke-width: 6; }
+    .featured-cd .cd-title { font-size: 1.3rem; }
+    .featured-cd .cd-timer { font-size: 1.6rem !important; }
+
+    /* --- CHRONO CSS (Timer & Stopwatch) --- */
+    .timer-ring-circle {
+      transition: stroke-dashoffset 0.1s linear, stroke 1.5s ease;
+    }
+    
+    /* Swooping Input Engine */
+    .chrono-input-wrapper {
+      position: relative;
+      padding: 15px 10px;
+      border-radius: 12px;
+      overflow: hidden;
+      z-index: 1;
+    }
+    .chrono-input {
+      width: 70px; font-size: 2.5rem; text-align: center; font-weight: bold;
+      background: transparent; border: none; border-bottom: 3px solid #495057;
+      color: #fff; outline: none; transition: border-color 0.3s;
+      z-index: 2; position: relative;
+    }
+    .chrono-input:focus { border-bottom-color: var(--theme-color); }
+    .swoop-bg {
+      position: absolute; bottom: 0; left: 0; width: 100%; height: 100%;
+      background: var(--theme-color); opacity: 0.15;
+      transform: scaleY(0); transform-origin: bottom; transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 0; border-radius: 12px;
+    }
+    .chrono-input:focus ~ .swoop-bg { transform: scaleY(1); }
+    
+    .chrono-input::-webkit-outer-spin-button,
+    .chrono-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+    .chrono-input[type=number] { -moz-appearance: textfield; }
+    
+    /* Physical Stopwatch Minimal UI */
+    .sw-body {
+      width: 180px; height: 180px; border-radius: 50%;
+      background: #212529; border: 6px solid #495057;
+      position: relative; box-shadow: inset 0 10px 20px rgba(0,0,0,0.5), 0 10px 20px rgba(0,0,0,0.4);
+    }
+    .sw-crown {
+      width: 18px; height: 14px; background: #6c757d;
+      position: absolute; top: -20px; left: 50%; transform: translateX(-50%);
+      border-radius: 4px 4px 0 0;
+    }
+    .sw-pusher-left {
+      width: 10px; height: 16px; background: #dc3545;
+      position: absolute; top: 12px; left: 16px; transform: rotate(-45deg);
+      border-radius: 3px; cursor: pointer; transition: transform 0.1s;
+    }
+    .sw-pusher-right {
+      width: 10px; height: 16px; background: var(--theme-color);
+      position: absolute; top: 12px; right: 16px; transform: rotate(45deg);
+      border-radius: 3px; cursor: pointer; transition: transform 0.1s;
+    }
+    .sw-pusher-left:active { transform: rotate(-45deg) translate(-2px, -2px); }
+    .sw-pusher-right:active { transform: rotate(45deg) translate(2px, -2px); }
+
+    /* Off Days Calendar Styles */
+    .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+    .calendar-day {
+      text-align: center; padding: 10px 5px; cursor: pointer; border-radius: 8px;
+      background-color: #2b3035; border: 1px solid #495057; transition: all 0.2s ease;
+      font-weight: 500; user-select: none;
+    }
+    .calendar-day:hover { background-color: #343a40; transform: translateY(-1px); }
+    .calendar-day.empty { background-color: transparent !important; border: none !important; cursor: default; box-shadow: none !important; }
+    .calendar-day.selected { background-color: var(--theme-color); color: #121212 !important; border-color: var(--theme-color); box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+    .calendar-day.holiday { background-color: rgba(220, 53, 69, 0.2) !important; border-color: #dc3545 !important; color: #ff6b6b !important; }
+    .calendar-day.holiday.selected { background-color: #dc3545 !important; border-color: #dc3545 !important; color: #fff !important; }
+    .day-label { text-align: center; font-weight: bold; font-size: 0.8rem; color: #adb5bd; padding-bottom: 5px; }
+
+    /* Theme Switcher Trigger */
+    .theme-picker-container {
+      position: absolute; top: 15px; right: 15px; z-index: 100;
+      display: flex; align-items: center; gap: 10px;
+      background: rgba(33, 37, 41, 0.8); padding: 8px 15px; border-radius: 30px;
+      cursor: pointer; border: 1px solid #495057; transition: background 0.2s ease;
+    }
+    .theme-picker-container:hover { background: rgba(52, 58, 64, 0.9); }
+  </style>
+</head>
+<body>
+
+  <div id="animated-bg"></div>
+
+  <div class="theme-picker-container" id="themeSettingsBtn">
+    <span class="text-light fw-bold small">🎨 Theme</span>
+  </div>
+
+  <div class="clock-container text-center text-white" id="clockCard">
+    <div id="alarmStatus" class="badge bg-success status-badge">Alarm Active</div>
+    <div id="time-display" class="mb-3">00:00:00</div>
+    
+    <ul class="nav nav-pills justify-content-center mb-3" id="modeTabs" role="tablist">
+      <li class="nav-item"><button class="nav-link active" id="alarm-tab" data-bs-toggle="pill" data-bs-target="#alarm-mode" type="button">Alarms</button></li>
+      <li class="nav-item"><button class="nav-link text-light" id="countdown-tab" data-bs-toggle="pill" data-bs-target="#countdown-mode" type="button">Countdowns</button></li>
+      <li class="nav-item"><button class="nav-link text-light" id="chrono-tab" data-bs-toggle="pill" data-bs-target="#chrono-mode" type="button">Chrono</button></li>
+      <li class="nav-item"><button class="nav-link text-light" id="offdays-tab" data-bs-toggle="pill" data-bs-target="#offdays-mode" type="button">Off Days</button></li>
+    </ul>
+
+    <div class="tab-content" id="modeTabContent">
+      <!-- ALARMS TAB -->
+      <div class="tab-pane fade show active" id="alarm-mode">
+        <div id="alarmsList" class="mb-3 text-start"></div>
+        <button id="addAlarmBtn" class="btn btn-outline-primary w-100">+ Add New Alarm</button>
+      </div>
+
+      <!-- COUNTDOWNS TAB -->
+      <div class="tab-pane fade" id="countdown-mode">
+        <div id="countdownsList" class="text-start mb-3"></div>
+        
+        <!-- ARCHIVE SECTION (TOGGLE) -->
+        <div id="archivedCountdownsWrapper" style="display: none; text-align: left; margin-top: 25px;">
+           <div class="d-flex justify-content-center border-top border-secondary pt-4">
+             <button id="toggleArchiveBtn" class="btn btn-sm btn-outline-secondary rounded-pill px-4" type="button">
+               <span class="fw-bold small">🗃️ <span id="toggleArchiveBtnText">View Archived Countdowns</span> (<span id="archiveCount">0</span>)</span>
+             </button>
+           </div>
+           <div id="archiveCollapse" style="display: none; margin-top: 20px;">
+             <div id="countdownsArchive" class="text-start opacity-75">
+                <!-- Archived grid items go here -->
+             </div>
+           </div>
+        </div>
+
+        <button id="addCountdownBtn" class="btn btn-outline-info w-100 mb-2 mt-4">+ Add New Deadline</button>
+      </div>
+
+      <!-- CHRONO TAB -->
+      <div class="tab-pane fade" id="chrono-mode">
+        <ul class="nav nav-tabs border-secondary mb-3 justify-content-center" id="chronoSubTabs">
+          <li class="nav-item"><a class="nav-link active text-info bg-transparent border-0 fw-bold" data-bs-toggle="tab" href="#timer-view">Timer</a></li>
+          <li class="nav-item"><a class="nav-link text-muted bg-transparent border-0 fw-bold" data-bs-toggle="tab" href="#stopwatch-view">Stopwatch</a></li>
+        </ul>
+
+        <div class="tab-content">
+          <!-- TIMER VIEW -->
+          <div class="tab-pane fade show active" id="timer-view">
+            <!-- Setup UI (Swooping Selection) -->
+            <div id="timerSetupUI" class="mb-4 pt-3">
+              <div class="d-flex justify-content-center align-items-center gap-3 mb-4">
+                <div class="chrono-input-wrapper d-flex flex-column align-items-center">
+                  <input type="number" id="timerH" class="chrono-input" min="0" value="0" placeholder="00">
+                  <div class="swoop-bg"></div>
+                  <small class="text-muted mt-2 fw-bold" style="letter-spacing: 1px;">HOURS</small>
+                </div>
+                <span class="fs-1 fw-bold text-muted mb-4 pb-3">:</span>
+                <div class="chrono-input-wrapper d-flex flex-column align-items-center">
+                  <input type="number" id="timerM" class="chrono-input" min="0" max="59" value="10" placeholder="00">
+                  <div class="swoop-bg"></div>
+                  <small class="text-muted mt-2 fw-bold" style="letter-spacing: 1px;">MINUTES</small>
+                </div>
+                <span class="fs-1 fw-bold text-muted mb-4 pb-3">:</span>
+                <div class="chrono-input-wrapper d-flex flex-column align-items-center">
+                  <input type="number" id="timerS" class="chrono-input" min="0" max="59" value="0" placeholder="00">
+                  <div class="swoop-bg"></div>
+                  <small class="text-muted mt-2 fw-bold" style="letter-spacing: 1px;">SECONDS</small>
+                </div>
+              </div>
+              <button id="startTimerBtn" class="btn btn-info w-75 fw-bold text-dark rounded-pill shadow-lg py-2 fs-5">Start Timer</button>
+            </div>
+            
+            <!-- Running UI -->
+            <div id="timerRunUI" style="display:none;" class="position-relative flex-column align-items-center mb-3">
+              <div class="position-relative d-flex justify-content-center align-items-center">
+                <svg width="220" height="220">
+                  <circle cx="110" cy="110" r="100" fill="none" stroke="#2b3035" stroke-width="8"/>
+                  <circle id="timerRing" class="timer-ring-circle" cx="110" cy="110" r="100" fill="none" stroke="var(--theme-color)" stroke-width="8" stroke-dasharray="628.32" stroke-dashoffset="0" transform="rotate(-90 110 110)" stroke-linecap="round"/>
+                </svg>
+                <div id="timerDisplay" class="position-absolute fs-1 fw-bold text-light" style="font-variant-numeric: tabular-nums;">00:00:00</div>
+              </div>
+              <div class="d-flex gap-3 mt-4 w-100 justify-content-center">
+                <button id="pauseTimerBtn" class="btn btn-outline-warning w-50 fw-bold">Pause</button>
+                <button id="resetTimerBtn" class="btn btn-outline-danger w-25 fw-bold">Reset</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- STOPWATCH VIEW -->
+          <div class="tab-pane fade" id="stopwatch-view">
+             <div class="sw-body mx-auto d-flex justify-content-center align-items-center flex-column mt-4 mb-4">
+               <div class="sw-crown"></div>
+               <div class="sw-pusher-left" id="swSplitBtn" title="Split / Reset"></div>
+               <div class="sw-pusher-right" id="swStartBtn" title="Start / Pause"></div>
+               
+               <div class="text-muted small fw-bold mb-1" style="letter-spacing: 1px;">CHRONO</div>
+               <div id="swDisplay" class="fs-2 fw-bold" style="font-variant-numeric: tabular-nums;">00:00.00</div>
+             </div>
+             
+             <div class="d-flex justify-content-between px-4 text-muted small mb-3">
+               <span>Left: Split/Reset</span>
+               <span>Right: Start/Stop</span>
+             </div>
+
+             <div id="swSplitsList" class="text-start mt-2 border-top border-secondary pt-2" style="max-height: 150px; overflow-y: auto;">
+                <!-- Split items injected here -->
+             </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- OFF DAYS TAB -->
+      <div class="tab-pane fade" id="offdays-mode">
+        <div class="calendar-header d-flex justify-content-center align-items-center gap-3 mb-3">
+           <button id="prevMonthBtn" class="btn btn-sm btn-outline-secondary px-3">&lt;</button>
+           <h5 id="calendarMonthYear" class="mb-0 fw-bold" style="min-width: 140px; text-align: center;">Month Year</h5>
+           <button id="nextMonthBtn" class="btn btn-sm btn-outline-secondary px-3">&gt;</button>
+        </div>
+        <div class="calendar-grid mb-1" id="calendarDaysHeader">
+           <div class="day-label">Su</div><div class="day-label">Mo</div>
+           <div class="day-label">Tu</div><div class="day-label">We</div>
+           <div class="day-label">Th</div><div class="day-label">Fr</div>
+           <div class="day-label">Sa</div>
+        </div>
+        <div class="calendar-grid mb-3" id="calendarGrid">
+           <!-- Dynamic calendar days -->
+        </div>
+        
+        <div class="d-flex justify-content-between align-items-center mb-3">
+           <small class="text-danger fw-bold" id="holidayStatusTxt">Loading...</small>
+           <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#templateEditor">Edit Template</button>
+        </div>
+
+        <div class="collapse mb-3 text-start" id="templateEditor">
+           <textarea id="emailTemplateInput" class="form-control bg-dark text-light border-secondary mb-2" rows="4">Hi Lead,&#10;&#10;I would like to request leave for the following dates:&#10;{dates}&#10;&#10;Thank you!</textarea>
+           <button id="saveTemplateBtn" class="btn btn-sm btn-secondary w-100">Save Template</button>
+        </div>
+
+        <button id="generateEmailBtn" class="btn btn-info w-100 fw-bold text-dark">✉️ Request Leave</button>
+      </div>
+    </div>
+
+    <!-- Active Ringing Controls -->
+    <div id="ringingControls" class="mt-3" style="display: none;">
+      <div class="d-flex justify-content-center gap-2">
+        <button id="snoozeBtn" class="btn btn-warning btn-lg px-4 text-dark fw-bold">Snooze</button>
+        <button id="stopAlarmBtn" class="btn btn-danger btn-lg px-4 fw-bold">Stop</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- THEME SETTINGS MODAL -->
+  <div class="modal fade text-dark" id="themeSettingsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content" style="background-color: #2b3035; color: #fff;">
+        <div class="modal-header border-secondary">
+          <h5 class="modal-title">🎨 Theme Settings</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="row mb-3 align-items-center">
+            <div class="col-8"><label class="form-label mb-0">Accent Color</label></div>
+            <div class="col-4">
+              <input type="color" id="themeAccentInput" class="form-control form-control-color bg-dark border-secondary w-100 p-1">
+            </div>
+          </div>
+          <div class="row mb-3 align-items-center">
+            <div class="col-8"><label class="form-label mb-0">Background Color</label></div>
+            <div class="col-4"><input type="color" id="themeBgInput" class="form-control form-control-color bg-dark border-secondary w-100 p-1"></div>
+          </div>
+          <div class="row mb-3 align-items-center">
+            <div class="col-8"><label class="form-label mb-0">Card Color</label></div>
+            <div class="col-4"><input type="color" id="themeCardInput" class="form-control form-control-color bg-dark border-secondary w-100 p-1" value="#212529"></div>
+          </div>
+          <div class="row mb-3 align-items-center">
+            <div class="col-8"><label class="form-label mb-0">Card Opacity <span id="opacityVal" class="text-info small">95%</span></label></div>
+            <div class="col-4"><input type="range" id="themeOpacityInput" class="form-range" min="0" max="1" step="0.05" value="0.95"></div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Animated Background</label>
+            <select id="themeAnimInput" class="form-select bg-dark text-light border-secondary">
+              <option value="none">None</option>
+              <option value="custom">Custom Image / Wallpaper</option>
+              <option value="gradient">Cosmic Gradient Flow</option>
+              <option value="orbs">Floating GSAP Orbs</option>
+              <option value="waves">Gooey Neon Waves</option>
+              <option value="space">Endless Space (POV)</option>
+              <option value="balls">Bouncing Balls</option>
+            </select>
+          </div>
+          <div class="mb-3" id="customWallpaperWrapper" style="display: none;">
+            <label class="form-label text-info small">Upload Custom Wallpaper</label>
+            <input type="file" id="themeCustomWallpaperInput" accept="image/*" class="form-control form-control-sm bg-dark text-light border-secondary">
+            <small class="text-muted" style="font-size: 0.7rem;">Images larger than 4MB may fail to save due to browser memory limits.</small>
+          </div>
+          <div class="row mb-3 align-items-center" id="ballCountWrapper" style="display: none;">
+            <div class="col-8"><label class="form-label mb-0">Number of Balls <span id="ballCountVal" class="text-info small">5</span></label></div>
+            <div class="col-4"><input type="range" id="themeBallCountInput" class="form-range" min="1" max="50" step="1" value="5"></div>
+          </div>
+          <div class="form-check form-switch mb-2 pt-2 border-top border-secondary">
+            <input class="form-check-input" type="checkbox" id="themeGlassInput">
+            <label class="form-check-label text-light fw-bold" for="themeGlassInput">Glassmorphism UI</label>
+            <div class="small text-muted mt-1 mb-2">Applies frosted glass blur to containers and buttons.</div>
+          </div>
+          <div class="row mb-3 align-items-center" id="glassBlurWrapper" style="display: none;">
+            <div class="col-8"><label class="form-label mb-0">Blur Amount <span id="blurVal" class="text-info small">20px</span></label></div>
+            <div class="col-4"><input type="range" id="themeBlurInput" class="form-range" min="0" max="50" step="1" value="20"></div>
+          </div>
+          <div class="form-check form-switch mb-2 pt-2 border-top border-secondary">
+            <input class="form-check-input" type="checkbox" id="themeAmoledInput">
+            <label class="form-check-label text-warning fw-bold" for="themeAmoledInput">Pitch Black AMOLED Mode</label>
+            <div class="small text-muted mt-1">Disables animations and sets pure black background for battery saving.</div>
+          </div>
+        </div>
+        <div class="modal-footer border-secondary">
+          <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Done</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ALARM EDIT MODAL -->
+  <div class="modal fade text-dark" id="alarmEditModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content" style="background-color: #2b3035; color: #fff;">
+        <div class="modal-header border-secondary">
+          <h5 class="modal-title" id="alarmModalTitle">Configure Alarm</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="editAlarmId">
+          <div class="mb-3">
+            <label class="form-label">Time</label>
+            <input type="time" id="alarmTimeInput" class="form-control bg-dark text-light border-secondary form-control-lg" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label d-block">Repeat Days</label>
+            <div class="btn-group day-checkboxes w-100" role="group">
+              <input type="checkbox" class="btn-check day-cb" id="day0" value="0"><label class="btn btn-outline-secondary" for="day0">Su</label>
+              <input type="checkbox" class="btn-check day-cb" id="day1" value="1"><label class="btn btn-outline-secondary" for="day1">Mo</label>
+              <input type="checkbox" class="btn-check day-cb" id="day2" value="2"><label class="btn btn-outline-secondary" for="day2">Tu</label>
+              <input type="checkbox" class="btn-check day-cb" id="day3" value="3"><label class="btn btn-outline-secondary" for="day3">We</label>
+              <input type="checkbox" class="btn-check day-cb" id="day4" value="4"><label class="btn btn-outline-secondary" for="day4">Th</label>
+              <input type="checkbox" class="btn-check day-cb" id="day5" value="5"><label class="btn btn-outline-secondary" for="day5">Fr</label>
+              <input type="checkbox" class="btn-check day-cb" id="day6" value="6"><label class="btn btn-outline-secondary" for="day6">Sa</label>
+            </div>
+            <small class="text-muted">Leave all unchecked for a one-time alarm.</small>
+          </div>
+          <div class="row mb-3">
+            <div class="col-6">
+              <label class="form-label">Tone</label>
+              <select id="alarmTone" class="form-select bg-dark text-light border-secondary">
+                <option value="square">Digital Beep</option>
+                <option value="sine">Smooth Tone</option>
+                <option value="sawtooth">Harsh Buzz</option>
+                <option value="custom">Upload Custom...</option>
+              </select>
+              <input type="file" id="customAudioFile" accept="audio/*" class="form-control form-control-sm mt-2 bg-dark text-light border-secondary" style="display: none;">
+            </div>
+            <div class="col-6">
+              <label class="form-label">Snooze (Mins)</label>
+              <input type="number" id="alarmSnooze" class="form-control bg-dark text-light border-secondary" value="5" min="1" max="60">
+            </div>
+          </div>
+          <div class="mb-4 mt-2">
+            <label class="form-label">Volume</label>
+            <div id="volumeSliderContainer" class="position-relative d-flex align-items-center mt-2" style="height: 30px; cursor: pointer; touch-action: none;">
+              <div class="w-100 position-absolute" style="height: 6px; background: #495057; border-radius: 5px; z-index: 1; pointer-events: none;"></div>
+              <div id="gsapTrackFill" class="position-absolute" style="height: 6px; background: var(--theme-color, #0dcaf0); border-radius: 5px; z-index: 2; width: 80%; pointer-events: none;"></div>
+              <div id="gsapThumbContainer" class="position-absolute" style="z-index: 3; left: 80%; top: 50%; pointer-events: none;">
+                <div id="gsapThumb" class="position-absolute" style="width: 20px; height: 20px; border-radius: 50%; background: var(--theme-color, #0dcaf0); box-shadow: 0 2px 5px rgba(0,0,0,0.5);"></div>
+                <div id="gsapTooltip" class="position-absolute d-flex justify-content-center align-items-center fw-bold text-dark" style="width: 32px; height: 32px; background: var(--theme-color, #0dcaf0); border-radius: 50% 50% 0 50%; box-shadow: 0 4px 10px rgba(0,0,0,0.4);">
+                  <span id="gsapTooltipText" style="display: inline-block; font-size: 11px;">80</span>
+                </div>
+              </div>
+              <input type="hidden" id="alarmVolume" value="0.8">
+            </div>
+          </div>
+          <div class="form-check form-switch mb-2">
+            <input class="form-check-input" type="checkbox" id="alarmSilent">
+            <label class="form-check-label" for="alarmSilent">Silent Mode (Visual Only)</label>
+          </div>
+        </div>
+        <div class="modal-footer border-secondary">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-primary" id="saveAlarmBtn">Save Alarm</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- COUNTDOWN EDIT MODAL -->
+  <div class="modal fade text-dark" id="countdownEditModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content" style="background-color: #2b3035; color: #fff;">
+        <div class="modal-header border-secondary">
+          <h5 class="modal-title" id="cdModalTitle">Add Deadline</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="editCountdownId">
+          <div class="mb-3">
+            <label class="form-label">Title (Optional)</label>
+            <input type="text" id="cdTitleInput" class="form-control bg-dark text-light border-secondary" placeholder="e.g. Project Launch">
+          </div>
+          <div class="form-check form-switch mb-3">
+            <input class="form-check-input" type="checkbox" id="cdDateOnly">
+            <label class="form-check-label" for="cdDateOnly">Date Only (Defaults to Midnight)</label>
+          </div>
+          <div class="mb-3" id="cdTimeWrapper">
+            <label class="form-label">Date & Time</label>
+            <input type="datetime-local" id="cdTimeInput" class="form-control bg-dark text-light border-secondary">
+          </div>
+          <div class="mb-3" id="cdDateWrapper" style="display:none;">
+            <label class="form-label">Date</label>
+            <input type="date" id="cdDateInput" class="form-control bg-dark text-light border-secondary">
+          </div>
+          <div class="form-check form-switch mb-3 pt-3 border-top border-secondary">
+            <input class="form-check-input" type="checkbox" id="cdAddToCalendar">
+            <label class="form-check-label text-info fw-bold" for="cdAddToCalendar">Add to Google Calendar</label>
+            <div class="small text-muted mt-1">Automatically generates a 1-hour block for this deadline.</div>
+          </div>
+        </div>
+        <div class="modal-footer border-secondary">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-info" id="saveCountdownBtn">Save Countdown</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* --- STATE MANAGEMENT --- */
+    let alarms = []; 
+    let activeRingingAlarm = null; 
+    let customAudioBlobUrl = null; 
+    let currentTheme = { accent: '#0dcaf0', bg: '#121212', cardBg: '#212529', cardOpacity: 0.95, glassmorphism: false, glassBlur: 20, anim: 'none', amoled: false, ballCount: 5 }; 
+    let lastCheckedMinute = null; 
+    let currentAnimParams = { anim: null, amoled: null, ballCount: null, wp: null }; 
+    let isAppReady = false; 
+    
+    let audioCtx;
+    let customAudioElement = new Audio();
+    let beepInterval;
+    let bgTimeline;
+    let snoozeTimeouts = []; 
+    let volumePreviewTimeout; 
+    let spaceAnimId = null; 
+    let ballsAnimId = null; 
+    
+    let originalTitle = document.title;
+    let titleFlashInterval = null;
+    let isFlashA = true;
+    
+    let countdowns = [];
+    let offDaysCalendarDate = new Date();
+    let selectedOffDays = new Set();
+    let publicHolidaysCache = {}; 
+    let fetchedHolidayYears = {}; 
+
+    const CD_CIRCUMFERENCE = 2 * Math.PI * 25; 
+    const TIMER_CIRCUMFERENCE = 2 * Math.PI * 100; 
+    const DOW_MAP = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+    const MONTH_MAP = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+
+    function animateContainerHeight(action) {
+      if (!isAppReady) { action(); return; }
+      const card = $('#clockCard');
+      const startHeight = card.outerHeight(); 
+      action(); 
+      const endHeight = card.outerHeight(); 
+      if (Math.abs(startHeight - endHeight) > 1) {
+         gsap.fromTo(card[0], {height: startHeight}, {height: endHeight, duration: 0.4, ease: "power2.out", clearProps: "height"});
+      }
+    }
+
+    $(document).ready(function() {
+      gsap.set('#gsapThumb', { xPercent: -50, yPercent: -50 });
+      gsap.set('#gsapTooltip', { xPercent: -50, yPercent: -50, rotation: 45, scale: 0 });
+      gsap.set('#gsapTooltipText', { rotation: -45 });
+
+      $(document).one('click', function() {
+        if ("Notification" in window && Notification.permission !== "granted" && Notification.permission !== "denied") Notification.requestPermission();
+      });
+
+      try {
+        const savedTheme = localStorage.getItem('sheetProThemeObj');
+        if (savedTheme) { currentTheme = JSON.parse(savedTheme); } 
+        else { const oldSaved = localStorage.getItem('sheetProTheme'); if (oldSaved && !oldSaved.startsWith('{')) currentTheme.accent = oldSaved; }
+        
+        const savedTemplate = localStorage.getItem('sheetProLeaveTemplate');
+        if (savedTemplate) $('#emailTemplateInput').val(savedTemplate);
+
+        const savedSelectedDays = localStorage.getItem('sheetProSelectedOffDays');
+        if (savedSelectedDays) selectedOffDays = new Set(JSON.parse(savedSelectedDays));
+      } catch (e) {}
+      
+      applyTheme(currentTheme);
+      loadAlarms();
+      loadCountdowns();
+      renderCalendar();
+      setInterval(updateClock, 1000);
+      setInterval(updateCountdownsAndTimerFallback, 1000); 
+      updateClock();
+
+      $('#themeSettingsBtn').on('click', () => bootstrap.Modal.getOrCreateInstance('#themeSettingsModal').show());
+      $('#addAlarmBtn').on('click', () => openAlarmModal());
+      $('#saveAlarmBtn').on('click', saveAlarm);
+      $('#stopAlarmBtn').on('click', stopAlarm);
+      $('#snoozeBtn').on('click', snoozeAlarm);
+      $('#addCountdownBtn').on('click', () => openCountdownModal());
+      $('#saveCountdownBtn').on('click', saveCountdown);
+      $('#prevMonthBtn').on('click', () => changeMonth(-1));
+      $('#nextMonthBtn').on('click', () => changeMonth(1));
+      $('#generateEmailBtn').on('click', submitLeaveRequest);
+      
+      $(document).on('click', '.del-cd-btn', function() {
+        countdowns = countdowns.filter(c => c.id != $(this).data('id')); saveCountdowns();
+      });
+
+      $('#toggleArchiveBtn').on('click', function() {
+        const archiveDiv = $('#archiveCollapse');
+        const isHidden = archiveDiv.is(':hidden');
+        
+        animateContainerHeight(function() {
+          if (isHidden) {
+            archiveDiv.show();
+            $('#toggleArchiveBtnText').text('Hide Archived Countdowns');
+          } else {
+            archiveDiv.hide();
+            $('#toggleArchiveBtnText').text('View Archived Countdowns');
+          }
+        });
+      });
+
+      $('#chronoSubTabs a[data-bs-toggle="tab"]').on('show.bs.tab', function () {
+         $('#chronoSubTabs a').removeClass('text-info fw-bold').addClass('text-muted');
+         $(this).removeClass('text-muted').addClass('text-info fw-bold');
+         if (!isAppReady) return; 
+         const card = $('#clockCard'); 
+         card.css('height', card.outerHeight() + 'px'); 
+      });
+
+      $('#chronoSubTabs a[data-bs-toggle="tab"]').on('shown.bs.tab', function () {
+        if (!isAppReady) return;
+        const card = $('#clockCard'); 
+        const oldHeight = parseFloat(card.css('height'));
+        card.css('height', 'auto'); 
+        const newHeight = card.outerHeight();
+        if (Math.abs(oldHeight - newHeight) > 1) {
+           gsap.fromTo(card[0], {height: oldHeight}, {height: newHeight, duration: 0.4, ease: "power2.out", clearProps: "height"});
+        } else { 
+           card.css('height', ''); 
+        }
+      });
+
+      $('#startTimerBtn').on('click', startTimer);
+      $('#pauseTimerBtn').on('click', togglePauseTimer);
+      $('#resetTimerBtn').on('click', resetTimer);
+      $('#swStartBtn').on('click', toggleStopwatch);
+      $('#swSplitBtn').on('click', splitOrResetStopwatch);
+
+      $('#themeAccentInput, #themeBgInput, #themeCardInput, #themeOpacityInput, #themeBlurInput, #themeAnimInput, #themeGlassInput, #themeAmoledInput, #themeBallCountInput').on('change input', function() {
+        $('#opacityVal').text(Math.round($('#themeOpacityInput').val() * 100) + '%');
+        $('#blurVal').text($('#themeBlurInput').val() + 'px');
+        $('#ballCountVal').text($('#themeBallCountInput').val());
+        applyTheme({
+            accent: $('#themeAccentInput').val(), bg: $('#themeBgInput').val(), cardBg: $('#themeCardInput').val(),
+            cardOpacity: parseFloat($('#themeOpacityInput').val()), glassmorphism: $('#themeGlassInput').is(':checked'),
+            glassBlur: parseInt($('#themeBlurInput').val()), anim: $('#themeAnimInput').val(), amoled: $('#themeAmoledInput').is(':checked'),
+            ballCount: parseInt($('#themeBallCountInput').val())
+        });
+      });
+
+      $('#themeCustomWallpaperInput').on('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = function(event) {
+            try {
+              localStorage.setItem('sheetProWallpaper', event.target.result);
+              if ($('#themeAnimInput').val() === 'custom') applyTheme({ ...currentTheme, anim: 'custom' });
+            } catch (err) { alert("This image is too large to save in local storage."); }
+          };
+          reader.readAsDataURL(file);
+        }
+      });
+
+      let isDraggingSlider = false;
+      function updateVolumeFromEvent(e) {
+        let container = $('#volumeSliderContainer')[0];
+        let clientX = e.type.includes('touch') ? e.originalEvent.touches[0].clientX : e.clientX;
+        let percent = Math.max(0, Math.min(1, (clientX - container.getBoundingClientRect().left) / container.getBoundingClientRect().width));
+        
+        $('#alarmVolume').val(percent);
+        $('#gsapTooltipText').text(Math.round(percent * 100));
+        gsap.set('#gsapThumbContainer', { left: (percent * 100) + '%' });
+        gsap.set('#gsapTrackFill', { width: (percent * 100) + '%' });
+
+        clearTimeout(volumePreviewTimeout);
+        volumePreviewTimeout = setTimeout(() => previewVolume(percent), 200);
+      }
+
+      $('#volumeSliderContainer').on('mousedown touchstart', function(e) {
+        isDraggingSlider = true;
+        gsap.to('#gsapTooltip', { scale: 1, y: -35, duration: 0.5, ease: 'back.out(2)' });
+        gsap.to('#gsapThumb', { scale: 0.5, duration: 0.3, ease: 'power2.out' });
+        updateVolumeFromEvent(e);
+      });
+      $(document).on('mousemove touchmove', function(e) { if(isDraggingSlider) updateVolumeFromEvent(e); });
+      $(document).on('mouseup touchend', function() {
+        if(!isDraggingSlider) return;
+        isDraggingSlider = false;
+        gsap.to('#gsapTooltip', { scale: 0, y: 0, duration: 0.4, ease: 'back.in(1.5)' });
+        gsap.to('#gsapThumb', { scale: 1, duration: 0.6, ease: 'elastic.out(1, 0.4)' });
+      });
+
+      $('#alarmTone').on('change', function() { $(this).val() === 'custom' ? $('#customAudioFile').show() : $('#customAudioFile').hide(); });
+      $('#customAudioFile').on('change', function(e) {
+        if (e.target.files[0]) {
+          if (customAudioBlobUrl) URL.revokeObjectURL(customAudioBlobUrl);
+          customAudioBlobUrl = URL.createObjectURL(e.target.files[0]);
+        }
+      });
+
+      $('#cdDateOnly').on('change', function() {
+        if($(this).is(':checked')) { $('#cdTimeWrapper').hide(); $('#cdDateWrapper').show(); } 
+        else { $('#cdTimeWrapper').show(); $('#cdDateWrapper').hide(); }
+      });
+
+      $(document).on('click', initAudio);
+      
+      $('#modeTabs .nav-link').on('click', function() { $('#modeTabs .nav-link').addClass('text-light'); $(this).removeClass('text-light'); });
+
+      $('#modeTabs button[data-bs-toggle="pill"]').on('show.bs.tab', function () {
+        if (!isAppReady) return; const card = $('#clockCard'); card.css('height', card.outerHeight() + 'px'); 
+      });
+      $('#modeTabs button[data-bs-toggle="pill"]').on('shown.bs.tab', function () {
+        if (!isAppReady) return;
+        const card = $('#clockCard'); const oldHeight = parseFloat(card.css('height'));
+        card.css('height', 'auto'); const newHeight = card.outerHeight();
+        if (Math.abs(oldHeight - newHeight) > 1) {
+           gsap.fromTo(card[0], {height: oldHeight}, {height: newHeight, duration: 0.4, ease: "power2.out", clearProps: "height"});
+        } else { card.css('height', ''); }
+      });
+      
+      let isDraggingCal = false; let dragAction = null; 
+      function handleCalHover(el) {
+        if (!isDraggingCal) return;
+        const dateStr = $(el).data('date');
+        if (dragAction === 'select') { selectedOffDays.add(dateStr); $(el).addClass('selected'); } 
+        else if (dragAction === 'deselect') { selectedOffDays.delete(dateStr); $(el).removeClass('selected'); }
+      }
+      $('#calendarGrid').on('mousedown touchstart', '.calendar-day:not(.empty)', function(e) {
+        isDraggingCal = true; const dateStr = $(this).data('date');
+        if (selectedOffDays.has(dateStr)) { dragAction = 'deselect'; selectedOffDays.delete(dateStr); $(this).removeClass('selected'); } 
+        else { dragAction = 'select'; selectedOffDays.add(dateStr); $(this).addClass('selected'); }
+      });
+      $('#calendarGrid').on('mouseenter', '.calendar-day:not(.empty)', function() { handleCalHover(this); });
+      $('#calendarGrid').on('touchmove', function(e) {
+        if (!isDraggingCal) return; e.preventDefault(); 
+        const touch = e.originalEvent.touches[0];
+        const element = document.elementFromPoint(touch.clientX, touch.clientY);
+        if ($(element).hasClass('calendar-day') && !$(element).hasClass('empty')) handleCalHover(element);
+      });
+      $(window).on('mouseup touchend', function() {
+        if (isDraggingCal) { isDraggingCal = false; try { localStorage.setItem('sheetProSelectedOffDays', JSON.stringify(Array.from(selectedOffDays))); } catch(e){} }
+      });
+
+      $('#saveTemplateBtn').on('click', function() {
+        try { localStorage.setItem('sheetProLeaveTemplate', $('#emailTemplateInput').val()); } catch(e){}
+        const originalText = $(this).text();
+        $(this).text("Saved!").removeClass('btn-secondary').addClass('btn-success');
+        setTimeout(() => { $(this).text(originalText).removeClass('btn-success').addClass('btn-secondary'); }, 2000);
+      });
+
+      isAppReady = true;
+    });
+
+    /* --- BACKGROUND ALERT LOGIC --- */
+    function startTitleFlash() {
+      if (titleFlashInterval) clearInterval(titleFlashInterval);
+      titleFlashInterval = setInterval(function() {
+        document.title = isFlashA ? "🚨 ALARM RINGING! 🚨" : "⏰ WAKE UP! ⏰";
+        isFlashA = !isFlashA;
+      }, 500);
+    }
+
+    function stopTitleFlash() {
+      if (titleFlashInterval) clearInterval(titleFlashInterval);
+      document.title = originalTitle;
+    }
+
+    function showDesktopNotification(titleText, bodyText) {
+      if ("Notification" in window && Notification.permission === "granted") {
+        const notification = new Notification(titleText, {
+          body: bodyText,
+          requireInteraction: true
+        });
+        notification.onclick = function() { window.focus(); this.close(); };
+      }
+    }
+
+    /* --- CLOCK LOOP --- */
+    function updateClock() {
+      const now = new Date();
+      const mytString = now.toLocaleString('en-US', { timeZone: 'Asia/Kuala_Lumpur' });
+      const mytDate = new Date(mytString);
+      const h = mytDate.getHours().toString().padStart(2, '0');
+      const m = mytDate.getMinutes().toString().padStart(2, '0');
+      const s = mytDate.getSeconds().toString().padStart(2, '0');
+      
+      $('#time-display').text(h + ':' + m + ':' + s);
+      const currentTimeString = h + ':' + m;
+
+      if (currentTimeString !== lastCheckedMinute) {
+        lastCheckedMinute = currentTimeString;
+        if (!activeRingingAlarm) {
+          alarms.forEach(alarm => {
+            if (alarm.active && alarm.time === currentTimeString) {
+               if (alarm.days.length === 0 || alarm.days.includes(mytDate.getDay().toString())) triggerAlarm(alarm);
+            }
+          });
+        }
+      }
+    }
+
+    /* --- COUNTDOWN ENGINE (FIXED DAY CALCULATION) --- */
+    function updateCountdownsAndTimerFallback() {
+      const now = Date.now();
+      
+      countdowns.forEach(cd => {
+        if (cd.completed) return;
+        const dist = cd.targetTime - now;
+        if (dist <= 0) { 
+            cd.completed = true; 
+            saveCountdowns(); 
+            triggerAlarm({ isCountdown: true, title: cd.title, tone: 'square', volume: 0.8, isSilent: false, snooze: 5, days: [] });
+            return; 
+        }
+        
+        const activeCDs = countdowns.filter(c => !c.completed).sort((a,b) => a.targetTime - b.targetTime);
+        const featuredIdx = activeCDs[0]?.id;
+        const isFeatured = cd.id === featuredIdx;
+        const ringId = isFeatured ? 'featured' : cd.id;
+        const textEl = document.getElementById(`cd-text-${ringId}`);
+        const ringEl = document.getElementById(`cd-circle-${ringId}`);
+        
+        if (textEl) {
+           // Direct Fix: Calculate Days explicitly
+           const days = Math.floor(dist / (1000 * 60 * 60 * 24));
+           const hours = Math.floor((dist % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+           const mins = Math.floor((dist % (1000 * 60 * 60)) / (1000 * 60));
+           const secs = Math.floor((dist % (1000 * 60)) / 1000);
+           
+           if (days > 0) {
+             textEl.innerText = `${days}d ${hours}h ${mins}m ${secs}s`;
+           } else {
+             textEl.innerText = `${hours}h ${mins}m ${secs}s`;
+           }
+        }
+
+        if (ringEl) {
+           const totalDuration = cd.targetTime - cd.startTime;
+           const percentageLeft = Math.max(0, Math.min(1, dist / totalDuration));
+           const circ = isFeatured ? (2 * Math.PI * 45) : (2 * Math.PI * 25);
+           const offset = circ - (percentageLeft * circ);
+           
+           ringEl.style.transition = 'stroke-dashoffset 1s linear';
+           ringEl.style.strokeDashoffset = offset;
+        }
+      });
+
+      if (timerState === 'running') {
+         const remaining = Math.max(0, timerEndTs - now);
+         if (remaining <= 0) {
+             timerState = 'stopped';
+             cancelAnimationFrame(timerAnimId);
+             
+             $('#timerRunUI').hide().removeClass('d-flex');
+             $('#timerSetupUI').show();
+             $('#timerRing').css('stroke-dashoffset', 0).css('stroke', 'var(--theme-color)');
+             
+             triggerAlarm({ title: "Timer Done!", isTimer: true, tone: 'square', volume: 0.8, isSilent: false, snooze: 0, days: [] });
+         }
+      }
+    }
+
+    /* --- CHRONO: TIMER LOGIC --- */
+    let timerTotalMs = 0;
+    let timerEndTs = 0;
+    let timerRemainingMs = 0;
+    let timerState = 'stopped'; 
+    let timerAnimId = null;
+
+    function formatChrono(ms, includeMs = false) {
+       const h = Math.floor(ms / 3600000);
+       const m = Math.floor((ms % 3600000) / 60000);
+       const s = Math.floor((ms % 60000) / 1000);
+       let res = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+       if (includeMs) {
+          const msec = Math.floor((ms % 1000) / 10);
+          res = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}.${String(msec).padStart(2, '0')}`;
+       }
+       return res;
+    }
+
+    function startTimer() {
+      const h = parseInt($('#timerH').val()) || 0;
+      const m = parseInt($('#timerM').val()) || 0;
+      const s = parseInt($('#timerS').val()) || 0;
+      timerTotalMs = (h * 3600 + m * 60 + s) * 1000;
+      if (timerTotalMs <= 0) return;
+
+      timerRemainingMs = timerTotalMs;
+      timerEndTs = Date.now() + timerRemainingMs;
+      timerState = 'running';
+      
+      animateContainerHeight(() => {
+        $('#timerSetupUI').hide();
+        $('#timerRunUI').removeClass('d-none').addClass('d-flex').show();
+        $('#pauseTimerBtn').text("Pause").removeClass('btn-outline-success').addClass('btn-outline-warning');
+        $('#timerRing').css('stroke', 'var(--theme-color)');
+      });
+      
+      timerAnimId = requestAnimationFrame(tickTimer);
+    }
+
+    function tickTimer() {
+       if (timerState !== 'running') return;
+       const now = Date.now();
+       timerRemainingMs = Math.max(0, timerEndTs - now);
+       
+       $('#timerDisplay').text(formatChrono(timerRemainingMs));
+       
+       const pct = timerRemainingMs / timerTotalMs;
+       const offset = TIMER_CIRCUMFERENCE - (pct * TIMER_CIRCUMFERENCE);
+       $('#timerRing').css('stroke-dashoffset', offset);
+
+       if (pct <= 0.15 || timerRemainingMs <= 10000) {
+           $('#timerRing').css('stroke', '#dc3545'); 
+       } else {
+           $('#timerRing').css('stroke', 'var(--theme-color)');
+       }
+
+       if (timerRemainingMs > 0) {
+           timerAnimId = requestAnimationFrame(tickTimer);
+       } else {
+           timerState = 'stopped';
+           $('#timerRunUI').hide().removeClass('d-flex');
+           $('#timerSetupUI').show();
+           $('#timerRing').css('stroke-dashoffset', 0).css('stroke', 'var(--theme-color)');
+           triggerAlarm({ title: "Timer Done!", isTimer: true, tone: 'square', volume: 0.8, isSilent: false, snooze: 0, days: [] });
+       }
+    }
+
+    function togglePauseTimer() {
+       if (timerState === 'running') {
+           timerState = 'paused';
+           cancelAnimationFrame(timerAnimId);
+           $('#pauseTimerBtn').text("Resume").removeClass('btn-outline-warning').addClass('btn-outline-success');
+       } else if (timerState === 'paused') {
+           timerEndTs = Date.now() + timerRemainingMs;
+           timerState = 'running';
+           $('#pauseTimerBtn').text("Pause").removeClass('btn-outline-success').addClass('btn-outline-warning');
+           timerAnimId = requestAnimationFrame(tickTimer);
+       }
+    }
+
+    function resetTimer() {
+       timerState = 'stopped';
+       cancelAnimationFrame(timerAnimId);
+       animateContainerHeight(() => {
+         $('#timerRunUI').hide().removeClass('d-flex');
+         $('#timerSetupUI').show();
+         $('#timerRing').css('stroke-dashoffset', 0).css('stroke', 'var(--theme-color)');
+       });
+    }
+
+    /* --- CHRONO: STOPWATCH LOGIC --- */
+    let swAccumulatedMs = 0;
+    let swStartTs = 0;
+    let swState = 'stopped'; 
+    let swAnimId = null;
+    let swSplitCount = 1;
+
+    function tickSw() {
+      if (swState !== 'running') return;
+      const currentElapsed = swAccumulatedMs + (Date.now() - swStartTs);
+      $('#swDisplay').text(formatChrono(currentElapsed, true));
+      swAnimId = requestAnimationFrame(tickSw);
+    }
+
+    function toggleStopwatch() {
+       const rightBtn = $('#swStartBtn');
+       if (swState === 'stopped' || swState === 'paused') {
+          swStartTs = Date.now(); swState = 'running';
+          rightBtn.css('background', '#dc3545'); 
+          swAnimId = requestAnimationFrame(tickSw);
+       } else {
+          swAccumulatedMs += (Date.now() - swStartTs); swState = 'paused';
+          rightBtn.css('background', 'var(--theme-color)'); 
+          cancelAnimationFrame(swAnimId);
+       }
+    }
+
+    function splitOrResetStopwatch() {
+       if (swState === 'running') {
+          const currentElapsed = swAccumulatedMs + (Date.now() - swStartTs);
+          const fTime = formatChrono(currentElapsed, true);
+          animateContainerHeight(() => {
+             $('#swSplitsList').prepend(`<div class="d-flex justify-content-between text-light mb-1 border-bottom border-dark pb-1"><span>Split ${String(swSplitCount).padStart(2,'0')}</span><span class="font-monospace">${fTime}</span></div>`);
+          });
+          swSplitCount++;
+       } else if (swState === 'paused' || swState === 'stopped') {
+          swAccumulatedMs = 0; swStartTs = 0; swState = 'stopped'; swSplitCount = 1;
+          cancelAnimationFrame(swAnimId);
+          $('#swDisplay').text("00:00.00");
+          animateContainerHeight(() => { $('#swSplitsList').empty(); });
+       }
+    }
+
+    /* --- ALARMS & ALERTS --- */
+    function renderAlarms() {
+      animateContainerHeight(() => {
+        const list = $('#alarmsList').empty();
+        if (alarms.length === 0) { list.append('\x3Cdiv class="text-center text-muted py-3"\x3ENo alarms set.\x3C/div\x3E'); return; }
+        
+        alarms.forEach(alarm => {
+          let daysStr = alarm.days.length > 0 ? alarm.days.map(d => DOW_MAP[d]).join(', ') : "One-time";
+          if (alarm.days.length === 7) daysStr = "Everyday";
+
+          const icon = alarm.isSilent ? '🔕' : '🔔';
+          const checked = alarm.active ? 'checked' : '';
+          const textClass = !alarm.active ? 'text-muted' : '';
+
+          list.append(`
+            <div class="alarm-item d-flex justify-content-between align-items-center" id="alarm-item-${alarm.id}">
+              <div>
+                <div class="alarm-time ${textClass}">${alarm.time} ${icon}</div>
+                <div class="alarm-days">${daysStr}</div>
+              </div>
+              <div class="d-flex align-items-center gap-2">
+                <div class="form-check form-switch m-0 me-2">
+                  <input class="form-check-input fs-5 alarm-toggle" type="checkbox" data-id="${alarm.id}" ${checked}>
+                </div>
+                <button class="btn btn-sm btn-outline-info edit-alarm-btn" data-id="${alarm.id}">✎</button>
+                <button class="btn btn-sm btn-outline-danger del-alarm-btn" data-id="${alarm.id}">×</button>
+              </div>
+            </div>
+          `);
+        });
+
+        $('.alarm-toggle').on('change', function() {
+          const alarm = alarms.find(a => a.id == $(this).data('id'));
+          if (alarm) { alarm.active = $(this).is(':checked'); saveAlarms(); }
+        });
+        $('.del-alarm-btn').on('click', function() {
+          alarms = alarms.filter(a => a.id != $(this).data('id')); saveAlarms();
+        });
+        $('.edit-alarm-btn').on('click', function() { openAlarmModal($(this).data('id')); });
+      });
+    }
+
+    function loadAlarms() { try { alarms = JSON.parse(localStorage.getItem('sheetProAlarms')) || []; } catch(e){} renderAlarms(); }
+    function saveAlarms() { localStorage.setItem('sheetProAlarms', JSON.stringify(alarms)); renderAlarms(); }
+
+    function openAlarmModal(id = null) {
+      $('#alarmEditModal').modal('show');
+      if (id) {
+        $('#alarmModalTitle').text('Edit Alarm');
+        const alarm = alarms.find(a => a.id == id);
+        $('#editAlarmId').val(alarm.id); $('#alarmTimeInput').val(alarm.time); $('#alarmTone').val(alarm.tone).trigger('change');
+        $('#alarmVolume').val(alarm.volume); $('#gsapTooltipText').text(Math.round(alarm.volume * 100));
+        gsap.set('#gsapThumbContainer', { left: (alarm.volume * 100) + '%' }); gsap.set('#gsapTrackFill', { width: (alarm.volume * 100) + '%' });
+        $('#alarmSnooze').val(alarm.snooze); $('#alarmSilent').prop('checked', alarm.isSilent);
+        $('.day-cb').prop('checked', false); alarm.days.forEach(d => $('#day' + d).prop('checked', true));
+      } else {
+        $('#alarmModalTitle').text('Add Alarm');
+        $('#editAlarmId').val(''); $('#alarmTimeInput').val(''); $('#alarmTone').val('square').trigger('change');
+        $('#alarmVolume').val(0.8); $('#gsapTooltipText').text('80');
+        gsap.set('#gsapThumbContainer', { left: '80%' }); gsap.set('#gsapTrackFill', { width: '80%' });
+        $('#alarmSnooze').val(5); $('#alarmSilent').prop('checked', false); $('.day-cb').prop('checked', false);
+      }
+    }
+
+    function saveAlarm() {
+      const time = $('#alarmTimeInput').val();
+      if (!time) { alert("Please select a time."); return; }
+      if ("Notification" in window && Notification.permission !== "granted" && Notification.permission !== "denied") Notification.requestPermission();
+
+      const id = $('#editAlarmId').val() || Date.now().toString();
+      const days = []; $('.day-cb:checked').each(function() { days.push($(this).val()); });
+
+      const newAlarm = {
+        id: id, time: time, days: days, tone: $('#alarmTone').val(),
+        volume: parseFloat($('#alarmVolume').val()), snooze: parseInt($('#alarmSnooze').val()) || 5,
+        isSilent: $('#alarmSilent').is(':checked'), active: true
+      };
+
+      const existingIdx = alarms.findIndex(a => a.id == id);
+      if (existingIdx >= 0) alarms[existingIdx] = newAlarm; else alarms.push(newAlarm);
+      alarms.sort((a, b) => a.time.localeCompare(b.time));
+      saveAlarms(); $('#alarmEditModal').modal('hide');
+    }
+
+    function triggerAlarm(alarm) {
+      initAudio();
+      activeRingingAlarm = alarm;
+      
+      if (alarm.isTimer) {
+          if (!$('#chrono-tab').hasClass('active')) $('#chrono-tab').trigger('click');
+          if (!$('#chronoSubTabs a[href="#timer-view"]').hasClass('active')) $('#chronoSubTabs a[href="#timer-view"]').trigger('click');
+      } else if (alarm.isCountdown) {
+          if (!$('#countdown-tab').hasClass('active')) $('#countdown-tab').trigger('click');
+      } else {
+          if (!$('#alarm-tab').hasClass('active')) $('#alarm-tab').trigger('click');
+      }
+      
+      animateContainerHeight(function() {
+        $('#ringingControls').show();
+        
+        const badge = $('#alarmStatus').removeClass('bg-success bg-warning').addClass('bg-danger');
+        if (alarm.isTimer) badge.text("TIMER DONE!").show();
+        else if (alarm.isCountdown) badge.text("DEADLINE REACHED!").show();
+        else badge.text("ALARM RINGING!").show();
+      });
+
+      startVisuals();
+      startTitleFlash();
+      
+      if (alarm.isTimer) showDesktopNotification("⏱️ Timer Finished!", "Your timer has ended.");
+      else if (alarm.isCountdown) showDesktopNotification("⏳ Deadline Reached!", "Your countdown for '" + (alarm.title || 'Deadline') + "' is complete!");
+      else showDesktopNotification("⏰ Alarm Ringing!", "Your " + alarm.time + " alarm is going off! Click here to view.");
+
+      if (!alarm.isSilent) startAudioEngine(alarm);
+    }
+
+    function stopAlarm() {
+      if (activeRingingAlarm) {
+        if (activeRingingAlarm.days && activeRingingAlarm.days.length === 0) {
+          activeRingingAlarm.active = false; saveAlarms();
+        }
+      }
+      activeRingingAlarm = null; stopVisuals(); stopTitleFlash(); stopAudioEngine();
+      animateContainerHeight(function() {
+        $('#ringingControls').hide();
+        $('#alarmStatus').hide().removeClass('bg-danger bg-warning').addClass('bg-success');
+      });
+    }
+
+    function snoozeAlarm() {
+      if (!activeRingingAlarm) return;
+      const snoozeMins = activeRingingAlarm.snooze || 5;
+      const snoozedAlarmData = Object.assign({}, activeRingingAlarm);
+      activeRingingAlarm = null; stopVisuals(); stopTitleFlash(); stopAudioEngine();
+
+      animateContainerHeight(function() {
+        $('#ringingControls').hide();
+        $('#alarmStatus').removeClass('bg-danger').addClass('bg-warning').text("Snoozed for " + snoozeMins + "m").show();
+      });
+
+      setTimeout(function() { animateContainerHeight(function() { $('#alarmStatus').hide(); }); }, 5000);
+      const timeoutId = setTimeout(function() { triggerAlarm(snoozedAlarmData); }, snoozeMins * 60 * 1000);
+      snoozeTimeouts.push(timeoutId);
+    }
+
+    /* --- AUDIO ENGINE --- */
+    function initAudio() {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+    }
+
+    function previewVolume(volume) {
+      initAudio(); const tone = $('#alarmTone').val();
+      if (tone === 'custom' && customAudioBlobUrl) {
+        const previewEl = new Audio(customAudioBlobUrl); previewEl.volume = volume; previewEl.play().catch(()=>{});
+        setTimeout(() => { previewEl.pause(); previewEl.currentTime = 0; }, 1000); 
+      } else {
+        const oscType = tone === 'custom' ? 'square' : tone; if (!audioCtx) return;
+        const osc = audioCtx.createOscillator(); const gainNode = audioCtx.createGain();
+        osc.type = oscType; osc.frequency.setValueAtTime(800, audioCtx.currentTime); 
+        const peak = volume * 0.5; gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
+        gainNode.gain.linearRampToValueAtTime(peak, audioCtx.currentTime + 0.05);
+        gainNode.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.5); 
+        osc.connect(gainNode); gainNode.connect(audioCtx.destination);
+        osc.start(audioCtx.currentTime); osc.stop(audioCtx.currentTime + 0.55);
+      }
+    }
+
+    function startAudioEngine(alarm) {
+      if (alarm.tone === 'custom' && customAudioBlobUrl) {
+        customAudioElement.src = customAudioBlobUrl; customAudioElement.volume = alarm.volume || 0.8; customAudioElement.loop = true;
+        customAudioElement.play().catch(e => startSynthEngine(alarm.tone, alarm.volume || 0.8));
+      } else {
+        startSynthEngine(alarm.tone || 'square', alarm.volume || 0.8);
+      }
+    }
+
+    function startSynthEngine(type, volume) {
+      const oscType = type === 'custom' ? 'square' : type;
+      const playPulse = function() {
+        if (!audioCtx) return;
+        const osc = audioCtx.createOscillator(); const gainNode = audioCtx.createGain();
+        osc.type = oscType; osc.frequency.setValueAtTime(800, audioCtx.currentTime); 
+        const peak = volume * 0.5; gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
+        gainNode.gain.linearRampToValueAtTime(peak, audioCtx.currentTime + 0.05);
+        gainNode.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.2);
+        osc.connect(gainNode); gainNode.connect(audioCtx.destination);
+        osc.start(audioCtx.currentTime); osc.stop(audioCtx.currentTime + 0.25);
+      };
+      playPulse(); beepInterval = setInterval(playPulse, oscType === 'sawtooth' ? 200 : 400); 
+    }
+
+    function stopAudioEngine() {
+      if (beepInterval) clearInterval(beepInterval);
+      if (customAudioElement) { customAudioElement.pause(); customAudioElement.currentTime = 0; }
+    }
+
+    /* --- COUNTDOWN ENGINE --- */
+    function loadCountdowns() { try { countdowns = JSON.parse(localStorage.getItem('sheetProCountdowns')) || []; } catch(e){} renderCountdowns(); }
+    function saveCountdowns() { localStorage.setItem('sheetProCountdowns', JSON.stringify(countdowns)); renderCountdowns(); }
+
+    function renderCountdowns() {
+      animateContainerHeight(() => {
+        const list = $('#countdownsList').empty();
+        const archiveList = $('#countdownsArchive').empty();
+        const archiveWrapper = $('#archivedCountdownsWrapper');
+        
+        if (countdowns.length === 0) {
+          list.append('\x3Cdiv class="text-center text-muted py-3 grid-column-span-all w-100" style="grid-column: 1 / -1;"\x3ENo active countdowns.\x3C/div\x3E');
+          archiveWrapper.hide();
+          return;
+        }
+
+        let activeCDs = countdowns.filter(c => !c.completed);
+        let completedCDs = countdowns.filter(c => c.completed);
+        activeCDs.sort((a, b) => a.targetTime - b.targetTime);
+        
+        if (activeCDs.length === 0) {
+          list.append('\x3Cdiv class="text-center text-muted py-3 grid-column-span-all w-100" style="grid-column: 1 / -1;"\x3ENo active countdowns.\x3C/div\x3E');
+        } else {
+          activeCDs.forEach(function(cd, index) {
+            list.append(generateCdItem(cd, index === 0, false));
+          });
+        }
+
+        if (completedCDs.length > 0) {
+          archiveWrapper.show();
+          $('#archiveCount').text(completedCDs.length);
+          completedCDs.forEach(function(cd) {
+            archiveList.append(generateCdItem(cd, false, true));
+          });
+        } else {
+          archiveWrapper.hide();
+          $('#archiveCollapse').hide(); 
+          $('#toggleArchiveBtnText').text('View Archived Countdowns');
+        }
+      });
+      updateCountdownsAndTimerFallback();
+    }
+
+    function generateCdItem(cd, featured, archived = false) {
+      const cls = featured ? 'featured-cd' : '';
+      const ringSize = featured ? 100 : 60; const ringRadius = featured ? 45 : 25; const ringCenter = featured ? 50 : 30;
+      const circ = 2 * Math.PI * ringRadius;
+      
+      const strokeColor = archived ? '#6c757d' : 'var(--theme-color)';
+      const initialOffset = archived ? 0 : 0; 
+      const dateStr = cd.isDateOnly ? new Date(cd.targetTime).toLocaleDateString() : new Date(cd.targetTime).toLocaleString();
+      
+      return `
+        <div class="alarm-item d-flex flex-column align-items-center ${cls}">
+          <div class="position-relative">
+            <svg width="${ringSize}" height="${ringSize}" class="ring-svg">
+              <circle cx="${ringCenter}" cy="${ringCenter}" r="${ringRadius}" fill="none" stroke="#495057" stroke-width="4"/>
+              <circle id="cd-circle-${featured ? 'featured' : cd.id}" cx="${ringCenter}" cy="${ringCenter}" r="${ringRadius}" fill="none" stroke="${strokeColor}" stroke-width="4" stroke-dasharray="${circ}" stroke-dashoffset="${initialOffset}" transform="rotate(-90 ${ringCenter} ${ringCenter})"/>
+            </svg>
+          </div>
+          <div class="fw-bold mt-2 cd-title text-truncate w-100 text-center" title="${cd.title || 'Deadline'}">${cd.title || 'Deadline'}</div>
+          <div id="cd-text-${featured ? 'featured' : cd.id}" class="text-info small fw-bold cd-timer">${archived ? 'Completed' : '--:--:--'}</div>
+          <div class="alarm-days small text-center">${dateStr}</div>
+          <button class="btn btn-sm btn-outline-danger mt-2 del-cd-btn" data-id="${cd.id}">×</button>
+        </div>
+      `;
+    }
+
+    function openCountdownModal() { $('#countdownEditModal').modal('show'); }
+    
+    function saveCountdown() {
+      const title = $('#cdTitleInput').val();
+      const isDateOnly = $('#cdDateOnly').is(':checked');
+      const timeVal = isDateOnly ? $('#cdDateInput').val() : $('#cdTimeInput').val();
+      const addToCal = $('#cdAddToCalendar').is(':checked');
+      
+      if (!timeVal) { alert("Please specify a date/time."); return; }
+      
+      const targetTime = new Date(timeVal).getTime();
+      const newCd = { 
+        id: Date.now(), 
+        title: title || 'Deadline', 
+        targetTime: targetTime, 
+        startTime: Date.now(), 
+        isDateOnly: isDateOnly,
+        completed: false 
+      };
+
+      if (addToCal && typeof google !== 'undefined' && google.script && google.script.run) {
+        google.script.run.createCalendarEvent(newCd.title, targetTime);
+      }
+
+      countdowns.push(newCd);
+      saveCountdowns(); 
+      $('#countdownEditModal').modal('hide');
+    }
+
+    /* --- OFF DAYS --- */
+    const hardcodedHolidays = { "-01-01": "New Year's Day", "-05-01": "Labour Day", "-08-31": "National Day", "-09-16": "Malaysia Day", "-12-25": "Christmas Day" };
+
+    function fetchPublicHolidays(year) {
+      if (fetchedHolidayYears[year]) return;
+      fetchedHolidayYears[year] = true;
+      $('#holidayStatusTxt').text('Loading holidays...').show();
+
+      for (const [date, name] of Object.entries(hardcodedHolidays)) {
+         if (date.startsWith('-')) publicHolidaysCache[year + date] = name;
+         else if (date.startsWith(year.toString())) publicHolidaysCache[date] = name;
+      }
+      
+      renderCalendar(); 
+
+      try {
+          if (typeof google !== 'undefined' && google.script && google.script.run && typeof google.script.run.getHolidaysFromSheet === 'function') {
+             google.script.run
+                .withSuccessHandler(function(sheetHolidays) {
+                    if (sheetHolidays && typeof sheetHolidays === 'object') {
+                        Object.assign(publicHolidaysCache, sheetHolidays);
+                        if (offDaysCalendarDate.getFullYear() === year) renderCalendar();
+                    }
+                    $('#holidayStatusTxt').text('Holidays synced.').fadeOut(1000);
+                })
+                .withFailureHandler(function() {
+                    $('#holidayStatusTxt').text('Holidays loaded.').fadeOut(1000);
+                })
+                .getHolidaysFromSheet(year); 
+          } else {
+             setTimeout(function() { $('#holidayStatusTxt').text('Holidays loaded.').fadeOut(1000); }, 500);
+          }
+      } catch (e) {
+         setTimeout(function() { $('#holidayStatusTxt').text('Holidays loaded.').fadeOut(1000); }, 500);
+      }
+    }
+
+    function renderCalendar() {
+      const year = offDaysCalendarDate.getFullYear(); 
+      const month = offDaysCalendarDate.getMonth();
+      
+      if (!fetchedHolidayYears[year]) {
+         fetchPublicHolidays(year);
+         return;
+      }
+
+      animateContainerHeight(() => {
+        const grid = $('#calendarGrid').empty();
+        $('#calendarMonthYear').text(MONTH_MAP[month] + " " + year);
+        
+        const first = new Date(year, month, 1).getDay(); const days = new Date(year, month + 1, 0).getDate();
+        for (let i = 0; i < first; i++) grid.append('<div class="calendar-day empty"></div>');
+        for (let d = 1; d <= days; d++) {
+          const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+          const hol = publicHolidaysCache[dateStr] ? 'holiday' : '';
+          const sel = selectedOffDays.has(dateStr) ? 'selected' : '';
+          let titleAttr = publicHolidaysCache[dateStr] ? `title="${publicHolidaysCache[dateStr]}"` : '';
+          grid.append(`<div class="calendar-day ${hol} ${sel}" data-date="${dateStr}" ${titleAttr}>${d}</div>`);
+        }
+      });
+    }
+
+    function changeMonth(offset) { offDaysCalendarDate.setMonth(offDaysCalendarDate.getMonth() + offset); renderCalendar(); }
+
+    function submitLeaveRequest() {
+      const sorted = Array.from(selectedOffDays).sort();
+      const formatLeaveDate = (dateStr) => {
+         const d = new Date(dateStr + "T00:00:00");
+         const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+         const day = d.getDate(); const month = MONTH_MAP[d.getMonth()]; const year = d.getFullYear(); const dayOfWeek = dayNames[d.getDay()];
+         const s = ["th", "st", "nd", "rd"]; const v = day % 100; const ordinalDay = day + (s[(v - 20) % 10] || s[v] || s[0]);
+         return ordinalDay + ' ' + month + ', ' + year + ' (' + dayOfWeek + ')';
+      };
+
+      const formatted = sorted.map(d => `- ${formatLeaveDate(d)}`).join('\n');
+      try { if (typeof google !== 'undefined' && google.script.run && typeof google.script.run.saveOffDaysToSheet === 'function') google.script.run.saveOffDaysToSheet(sorted); } catch(e){}
+      window.open(`mailto:?subject=Leave Request&body=${encodeURIComponent($('#emailTemplateInput').val().replace('{dates}', formatted))}`, '_blank');
+      selectedOffDays.clear(); renderCalendar();
+    }
+
+    /* --- THEME SYSTEM --- */
+    function hexToRgb(hex) {
+      const shorthandRegex = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
+      hex = hex.replace(shorthandRegex, function(m, r, g, b) { return r + r + g + g + b + b; });
+      const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+      return result ? parseInt(result[1], 16) + ', ' + parseInt(result[2], 16) + ', ' + parseInt(result[3], 16) : '33, 37, 41';
+    }
+
+    function applyTheme(theme) {
+      currentTheme = theme;
+      try { localStorage.setItem('sheetProThemeObj', JSON.stringify(theme)); } catch(e) {}
+      
+      let opacity = theme.cardOpacity !== undefined ? theme.cardOpacity : 0.95;
+      let blurPx = theme.glassBlur !== undefined ? theme.glassBlur : 20;
+      let actualBg = theme.amoled ? '#000000' : theme.bg;
+      let baseCardBg = theme.cardBg || '#212529';
+      let cardRgb = hexToRgb(baseCardBg);
+      let themeRgb = hexToRgb(theme.accent);
+      
+      let containerBg = theme.amoled ? '#000000' : 'rgba(' + cardRgb + ', ' + opacity + ')';
+      let containerBorder = theme.amoled ? '1px solid ' + theme.accent : 'none';
+
+      let glassCSS = '';
+      if (theme.glassmorphism && !theme.amoled) {
+        containerBorder = '1px solid rgba(255, 255, 255, 0.15)';
+        
+        glassCSS = '.clock-container { backdrop-filter: blur(' + blurPx + 'px) saturate(120%); -webkit-backdrop-filter: blur(' + blurPx + 'px) saturate(120%); box-shadow: 0 15px 45px rgba(0, 0, 0, 0.5), inset 0 1px 2px rgba(255, 255, 255, 0.2) !important; }' +
+                   '.alarm-item, .modal-content { background: rgba(' + cardRgb + ', ' + (opacity * 0.6) + ') !important; backdrop-filter: blur(' + (blurPx * 0.5) + 'px); -webkit-backdrop-filter: blur(' + (blurPx * 0.5) + 'px); border: 1px solid rgba(255,255,255,0.12) !important; box-shadow: inset 0 1px 1px rgba(255,255,255,0.05); }' +
+                   '.btn-primary, .btn-info, .nav-pills .nav-link.active, .badge.bg-success, .badge.bg-warning, .badge.bg-danger { background-color: rgba(' + themeRgb + ', ' + Math.max(0.4, opacity) + ') !important; backdrop-filter: blur(' + (blurPx * 0.4) + 'px); -webkit-backdrop-filter: blur(' + (blurPx * 0.4) + 'px); border: 1px solid rgba(255,255,255,0.3) !important; color: #fff !important; text-shadow: 0 1px 2px rgba(0,0,0,0.4); }' +
+                   '.btn-outline-primary, .btn-outline-info { background-color: rgba(' + themeRgb + ', 0.15) !important; backdrop-filter: blur(' + (blurPx * 0.2) + 'px); -webkit-backdrop-filter: blur(' + (blurPx * 0.2) + 'px); border: 1px solid rgba(' + themeRgb + ', 0.6) !important; }' +
+                   '.form-control, .form-select { background-color: rgba(0, 0, 0, 0.3) !important; backdrop-filter: blur(' + (blurPx * 0.2) + 'px); border: 1px solid rgba(255, 255, 255, 0.15) !important; color: #fff !important; }' +
+                   '.calendar-day { background-color: rgba(0, 0, 0, 0.3) !important; backdrop-filter: blur(' + (blurPx * 0.2) + 'px); border: 1px solid rgba(255, 255, 255, 0.1) !important; }' +
+                   '.calendar-day.selected { background-color: rgba(' + themeRgb + ', ' + Math.max(0.5, opacity) + ') !important; border: 1px solid rgba(255,255,255,0.4) !important; color: #fff !important; text-shadow: 0 1px 2px rgba(0,0,0,0.5); box-shadow: 0 4px 10px rgba(0,0,0,0.3), inset 0 1px 1px rgba(255,255,255,0.3) !important; }' +
+                   '.calendar-day.holiday.selected { background-color: rgba(220, 53, 69, ' + Math.max(0.6, opacity) + ') !important; border: 1px solid rgba(255,255,255,0.4) !important; color: #fff !important; text-shadow: 0 1px 2px rgba(0,0,0,0.5); }';
+      }
+
+      $('#dynamic-theme').remove();
+      $('<style id="dynamic-theme">' +
+        ':root { --theme-color: ' + theme.accent + '; --bg-color: ' + actualBg + '; }' +
+        '.clock-container { background: ' + containerBg + ' !important; border: ' + containerBorder + ' !important; }' +
+        '.btn-primary, .btn-info, .nav-pills .nav-link.active { background-color: var(--theme-color) !important; border-color: var(--theme-color) !important; color: #121212 !important; }' +
+        '.text-info, .text-primary { color: var(--theme-color) !important; }' +
+        '.badge.bg-secondary { background-color: var(--theme-color) !important; color: #121212 !important; }' +
+        '.btn-outline-primary, .btn-outline-info { border-color: var(--theme-color) !important; color: var(--theme-color) !important; }' +
+        '.btn-outline-primary:hover, .btn-outline-info:hover { background-color: var(--theme-color) !important; color: #121212 !important; }' +
+        '.form-switch .form-check-input:checked { background-color: var(--theme-color); border-color: var(--theme-color); }' +
+        glassCSS +
+      '</style>').appendTo('head');
+
+      $('#themeAccentInput').val(theme.accent);
+      $('#themeBgInput').val(theme.bg);
+      $('#themeCardInput').val(theme.cardBg || '#212529');
+      $('#themeOpacityInput').val(opacity);
+      $('#opacityVal').text(Math.round(opacity * 100) + '%');
+      $('#themeBlurInput').val(blurPx);
+      $('#blurVal').text(blurPx + 'px');
+      $('#themeGlassInput').prop('checked', theme.glassmorphism || false);
+      $('#themeAnimInput').val(theme.anim);
+      $('#themeAmoledInput').prop('checked', theme.amoled);
+      $('#themeBallCountInput').val(theme.ballCount || 5);
+      $('#ballCountVal').text(theme.ballCount || 5);
+      
+      if (theme.glassmorphism && !theme.amoled) $('#glassBlurWrapper').show();
+      else $('#glassBlurWrapper').hide();
+
+      if (theme.anim === 'custom') $('#customWallpaperWrapper').show();
+      else $('#customWallpaperWrapper').hide();
+
+      if (theme.anim === 'balls' && !theme.amoled) $('#ballCountWrapper').show();
+      else $('#ballCountWrapper').hide();
+
+      const wp = localStorage.getItem('sheetProWallpaper') || '';
+      const animNeedsUpdate = (
+          currentAnimParams.anim !== theme.anim ||
+          currentAnimParams.amoled !== theme.amoled ||
+          currentAnimParams.ballCount !== theme.ballCount ||
+          currentAnimParams.wp !== wp
+      );
+
+      if (animNeedsUpdate) {
+          renderAnimations(theme);
+          currentAnimParams = { anim: theme.anim, amoled: theme.amoled, ballCount: theme.ballCount, wp: wp };
+      }
+    }
+
+    /* --- GSAP BACKGROUND ANIMATIONS --- */
+    function renderAnimations(theme) {
+      const animContainer = $('#animated-bg');
+      
+      if (spaceAnimId) {
+        cancelAnimationFrame(spaceAnimId);
+        spaceAnimId = null;
+        $(window).off('resize.space');
+      }
+      
+      if (ballsAnimId) {
+        cancelAnimationFrame(ballsAnimId);
+        ballsAnimId = null;
+        $(window).off('resize.balls');
+      }
+
+      animContainer.empty();
+      gsap.killTweensOf('.bg-orb');
+      animContainer.removeClass('bg-anim-gradient');
+      
+      animContainer.css({
+        'background-image': '',
+        'background-size': '',
+        'background-position': '',
+        'background-repeat': ''
+      });
+
+      if (theme.amoled || theme.anim === 'none') {
+        animContainer.hide();
+        return;
+      }
+
+      animContainer.show();
+      
+      if (theme.anim === 'custom') {
+        const wp = localStorage.getItem('sheetProWallpaper');
+        if (wp) {
+          animContainer.css({
+            'background-image': 'url(' + wp + ')',
+            'background-size': 'cover',
+            'background-position': 'center',
+            'background-repeat': 'no-repeat'
+          });
+        }
+      }
+      else if (theme.anim === 'gradient') {
+        animContainer.addClass('bg-anim-gradient');
+      } 
+      else if (theme.anim === 'orbs') {
+        for(let i = 0; i < 15; i++) {
+          let orb = $('<div class="bg-orb"></div>');
+          let size = Math.random() * 100 + 50;
+          orb.css({
+            width: size + 'px', height: size + 'px',
+            background: theme.accent, opacity: 0.15,
+            position: 'absolute', borderRadius: '50%',
+            left: (Math.random() * 100) + 'vw', top: (Math.random() * 100) + 'vh'
+          });
+          animContainer.append(orb);
+          gsap.to(orb, {
+            x: (Math.random() * 400 - 200),
+            y: (Math.random() * 400 - 200),
+            duration: Math.random() * 10 + 10,
+            repeat: -1, yoyo: true, ease: 'sine.inOut'
+          });
+        }
+      } 
+      else if (theme.anim === 'waves') {
+        let sea = $('<div class="sea"></div>');
+        const waveCount = 100;
+        const waveDuration = 2000;
+        
+        for(let i = 1; i <= waveCount; i++) {
+          let delayFadeSkew = (i * -waveDuration / waveCount) + 'ms';
+          let delayTranslate = (i * -waveDuration / waveCount - waveDuration / 2) + 'ms';
+
+          let graphic = $('<div class="wave_graphic"></div>');
+          let fade = $('<div class="wave_fade"></div>').css('animation-delay', delayFadeSkew).append(graphic);
+          let skew = $('<div class="wave_skew"></div>').css('animation-delay', delayFadeSkew).append(fade);
+          let translate = $('<div class="wave_translate"></div>').css('animation-delay', delayTranslate).append(skew);
+          let wave = $('<div class="wave"></div>').append(translate);
+
+          sea.append(wave);
+        }
+        animContainer.append(sea);
+      }
+      else if (theme.anim === 'space') {
+        const canvas = document.createElement('canvas');
+        animContainer.append(canvas);
+        const ctx = canvas.getContext('2d');
+        
+        let w = canvas.width = window.innerWidth;
+        let h = canvas.height = window.innerHeight;
+
+        $(window).on('resize.space', function() {
+          w = canvas.width = window.innerWidth;
+          h = canvas.height = window.innerHeight;
+        });
+
+        const particles = [];
+        const numParticles = 400; 
+
+        for(let i = 0; i < numParticles; i++) {
+          const typeRand = Math.random();
+          const p = {
+            x: (Math.random() - 0.5) * 2000,
+            y: (Math.random() - 0.5) * 2000,
+            z: Math.random() * 2000,
+            type: typeRand > 0.95 ? 'asteroid' : (typeRand > 0.5 ? 'star' : 'dust')
+          };
+          p.pz = p.z; 
+          
+          if (p.type === 'asteroid') {
+            p.vertices = [];
+            const vCount = Math.floor(Math.random() * 4) + 5;
+            for(let j=0; j<vCount; j++) {
+              p.vertices.push(Math.random() * 0.4 + 0.8); 
+            }
+            p.rot = Math.random() * Math.PI * 2;
+            p.rotSpeed = (Math.random() - 0.5) * 0.1;
+          }
+          particles.push(p);
+        }
+
+        const fov = 300;
+        const speed = 10; 
+
+        function drawSpace() {
+          if (currentTheme.anim !== 'space') return; 
+          
+          ctx.clearRect(0, 0, w, h); 
+
+          particles.forEach(function(p) {
+            p.pz = p.z;
+            p.z -= speed;
+            
+            if (p.z <= 0) {
+              p.x = (Math.random() - 0.5) * 2000;
+              p.y = (Math.random() - 0.5) * 2000;
+              p.z = 2000;
+              p.pz = 2000;
+            }
+
+            const sx = (p.x / p.z) * fov + w / 2;
+            const sy = (p.y / p.z) * fov + h / 2;
+            const px = (p.x / p.pz) * fov + w / 2;
+            const py = (p.y / p.pz) * fov + h / 2;
+            const size = (fov / p.z) * (p.type === 'asteroid' ? 5 : (p.type === 'star' ? 1.5 : 0.8));
+
+            if (sx >= 0 && sx <= w && sy >= 0 && sy <= h) {
+              if (p.type !== 'asteroid') {
+                ctx.beginPath();
+                ctx.moveTo(px, py);
+                ctx.lineTo(sx, sy);
+                ctx.lineWidth = size;
+                ctx.strokeStyle = p.type === 'star' ? '#ffffff' : theme.accent;
+                ctx.stroke();
+              } else {
+                p.rot += p.rotSpeed;
+                ctx.save();
+                ctx.translate(sx, sy);
+                ctx.rotate(p.rot);
+                ctx.beginPath();
+                p.vertices.forEach(function(v, i) {
+                  const angle = (i / p.vertices.length) * Math.PI * 2;
+                  const rad = size * v;
+                  if(i === 0) ctx.moveTo(Math.cos(angle) * rad, Math.sin(angle) * rad);
+                  else ctx.lineTo(Math.cos(angle) * rad, Math.sin(angle) * rad);
+                });
+                ctx.closePath();
+                ctx.fillStyle = '#6c757d'; 
+                ctx.fill();
+                ctx.restore();
+              }
+            }
+          });
+
+          spaceAnimId = requestAnimationFrame(drawSpace);
+        }
+        drawSpace();
+      }
+      else if (theme.anim === 'balls') {
+        const canvas = document.createElement('canvas');
+        animContainer.append(canvas);
+        const ctx = canvas.getContext('2d');
+        
+        let w = canvas.width = window.innerWidth;
+        let h = canvas.height = window.innerHeight;
+
+        $(window).on('resize.balls', function() {
+          w = canvas.width = window.innerWidth;
+          h = canvas.height = window.innerHeight;
+        });
+
+        const numBalls = theme.ballCount || 5;
+        const balls = [];
+        const rgbBase = hexToRgb(theme.accent).split(', ').map(Number);
+        
+        for (let i = 0; i < numBalls; i++) {
+          let radius = Math.random() * 15 + 15; 
+          let rOff = Math.random() * 60 - 30;
+          let gOff = Math.random() * 60 - 30;
+          let bOff = Math.random() * 60 - 30;
+          let col = 'rgb(' + 
+            Math.min(255, Math.max(0, rgbBase[0] + rOff)) + ',' + 
+            Math.min(255, Math.max(0, rgbBase[1] + gOff)) + ',' + 
+            Math.min(255, Math.max(0, rgbBase[2] + bOff)) + ')';
+
+          balls.push({
+            x: Math.random() * (w - radius * 2) + radius,
+            y: Math.random() * (h - radius * 2) + radius,
+            vx: (Math.random() - 0.5) * 8 + (Math.random() > 0.5 ? 2 : -2), 
+            vy: (Math.random() - 0.5) * 8 + (Math.random() > 0.5 ? 2 : -2),
+            radius: radius,
+            mass: radius * radius, 
+            color: col
+          });
+        }
+
+        function drawBalls() {
+          if (currentTheme.anim !== 'balls') return;
+          ctx.clearRect(0, 0, w, h);
+
+          balls.forEach(function(b) {
+            b.x += b.vx;
+            b.y += b.vy;
+
+            if (b.x - b.radius <= 0) {
+              b.vx *= -1; b.x = b.radius; b.vy += (Math.random() - 0.5) * 2; 
+            } else if (b.x + b.radius >= w) {
+              b.vx *= -1; b.x = w - b.radius; b.vy += (Math.random() - 0.5) * 2;
+            }
+            
+            if (b.y - b.radius <= 0) {
+              b.vy *= -1; b.y = b.radius; b.vx += (Math.random() - 0.5) * 2;
+            } else if (b.y + b.radius >= h) {
+              b.vy *= -1; b.y = h - b.radius; b.vx += (Math.random() - 0.5) * 2;
+            }
+
+            b.vx = Math.max(-12, Math.min(12, b.vx));
+            b.vy = Math.max(-12, Math.min(12, b.vy));
+          });
+
+          for (let i = 0; i < balls.length; i++) {
+            for (let j = i + 1; j < balls.length; j++) {
+              let b1 = balls[i];
+              let b2 = balls[j];
+              let dx = b2.x - b1.x;
+              let dy = b2.y - b1.y;
+              let dist = Math.sqrt(dx * dx + dy * dy);
+              let minDist = b1.radius + b2.radius;
+
+              if (dist < minDist) {
+                let overlap = minDist - dist;
+                let nx = dx / dist;
+                let ny = dy / dist;
+                
+                b1.x -= nx * (overlap / 2); b1.y -= ny * (overlap / 2);
+                b2.x += nx * (overlap / 2); b2.y += ny * (overlap / 2);
+
+                let tx = -ny; let ty = nx;
+                let dpNorm1 = b1.vx * nx + b1.vy * ny; let dpTan1 = b1.vx * tx + b1.vy * ty;
+                let dpNorm2 = b2.vx * nx + b2.vy * ny; let dpTan2 = b2.vx * tx + b2.vy * ty;
+                let m12 = b1.mass + b2.mass; let m1_2 = b1.mass - b2.mass;
+
+                let v1n = (dpNorm1 * m1_2 + 2 * b2.mass * dpNorm2) / m12;
+                let v2n = (dpNorm2 * -m1_2 + 2 * b1.mass * dpNorm1) / m12;
+
+                b1.vx = tx * dpTan1 + nx * v1n; b1.vy = ty * dpTan1 + ny * v1n;
+                b2.vx = tx * dpTan2 + nx * v2n; b2.vy = ty * dpTan2 + ny * v2n;
+              }
+            }
+          }
+
+          balls.forEach(function(b) {
+            ctx.fillStyle = b.color;
+            ctx.shadowColor = b.color;
+            ctx.shadowBlur = 15;
+            ctx.beginPath();
+            ctx.arc(b.x, b.y, b.radius, 0, Math.PI * 2);
+            ctx.fill();
+          });
+          ballsAnimId = requestAnimationFrame(drawBalls);
+        }
+        drawBalls();
+      }
+    }
+
+    function startVisuals() {
+      if(currentTheme.amoled) return; 
+      bgTimeline = gsap.timeline({ repeat: -1 });
+      bgTimeline.to("body", { backgroundColor: "#8b0000", duration: 0.2, ease: "power1.inOut" })
+                .to("body", { backgroundColor: currentTheme.bg, duration: 0.2, ease: "power1.inOut" });
+
+      gsap.to("#clockCard", { x: function() { return Math.random() * 10 - 5; }, y: function() { return Math.random() * 10 - 5; }, duration: 0.05, repeat: -1, yoyo: true });
+    }
+
+    function stopVisuals() {
+      if (bgTimeline) bgTimeline.kill();
+      gsap.killTweensOf("#clockCard");
+      gsap.to("body", { backgroundColor: currentTheme.amoled ? '#000000' : currentTheme.bg, duration: 1 });
+      gsap.to("#clockCard", { x: 0, y: 0, duration: 0.2 });
+    }
+
+  </script>
+</body>
+</html>
