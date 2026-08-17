@@ -4,7 +4,10 @@
 # **⏰ ALARMAI (SheetPro Alarm & Leave Management Suite)**
 
 
-![enter image description here](https://raw.githubusercontent.com/sachitananda/ALARMAI/072f3c86af21b0b1052ae62ba4a0b7745c1cc812/alarmailogo.svg)
+<p align="center">
+  <img src="https://raw.githubusercontent.com/sachitananda/ALARMAI/072f3c86af21b0b1052ae62ba4a0b7745c1cc812/alarmailogo.svg" alt="ALARMAI Logo" width="200" />
+</p>
+
 **ALARMAI** is a feature-packed web application built on **Google Apps Script** with a modern frontend interface. It seamlessly combines time management tools—such as customizable alarms, deadline countdowns, timers, and stopwatches—with an integrated employee leave/off-day request engine backed by **Google Sheets** and **Google Calendar**.
 
 
